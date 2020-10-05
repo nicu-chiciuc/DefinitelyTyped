@@ -23,6 +23,7 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
 import { BrowserPolicy } from "meteor/browser-policy-common";
 import { DDPRateLimiter } from "meteor/ddp-rate-limiter";
+import { DDP } from "meteor/ddp";
 
 declare module 'meteor/meteor' {
     namespace Meteor {
@@ -254,6 +255,10 @@ Posts.insert({ title: "Hello world", body: "First post" });
 
 class Animal {
     constructor(public doc: any) {}
+
+    makeSomeNoise() {
+        console.log('noise');
+    }
 }
 
 interface AnimalDAO {
@@ -264,13 +269,14 @@ interface AnimalDAO {
 }
 
 // Define a Collection that uses Animal as its document
-var Animals = new Mongo.Collection<AnimalDAO>("Animals", {
-    transform: function (doc: any): Animal { return new Animal(doc); }
+var Animals = new Mongo.Collection<AnimalDAO, Animal>("Animals", {
+    transform: function (doc): Animal { return new Animal(doc); }
 });
 
 // Create an Animal and call its makeNoise method
 Animals.insert({ name: "raptor", sound: "roar" });
-Animals.findOne({ name: "raptor" }).makeNoise(); // prints "roar"
+// Doesn't have access to `makeNoise()` but has access to `makeSomeNoise()`
+Animals.findOne({ name: "raptor" }).makeSomeNoise(); // prints "roar"
 
 /**
  * From Collections, Collection.insert section

@@ -133,39 +133,41 @@ declare module "meteor/mongo" {
         type Options = {
             sort?: SortSpecifier;
             skip?: number;
-            limit?: number;
             fields?: FieldSpecifier;
             reactive?: boolean;
-            transform?: TransformFn;
         }
-
-        type DispatchTransform<Transf extends { transform?: TransformFn }, DefType, U> = Transf['transform'] extends null ? DefType : Transf['transform'] extends (...args: any) => any ? ReturnType<Transf['transform']> : U;
 
         var Collection: CollectionStatic;
         interface CollectionStatic {
             new <T, U = T>(name: string | null, options?: {
                 connection?: Object | null;
                 idGeneration?: string;
-                transform?: Function | null;
+                transform?: (doc: T) => U | null;
             }): Collection<T, U>;
         }
         interface Collection<T, U = T> {
-            allow<Fn extends TransformFn, Doc = DispatchTransform<{ transform: Fn }, T, U>>(options: {
-                insert?: (userId: string, doc: Doc) => boolean;
-                update?: (userId: string, doc: Doc, fieldNames: string[], modifier: any) => boolean;
-                remove?: (userId: string, doc: Doc) => boolean;
+            allow<O = U>(options: {
+                insert?: (userId: string, doc: O) => boolean;
+                update?: (userId: string, doc: O, fieldNames: string[], modifier: any) => boolean;
+                remove?: (userId: string, doc: O) => boolean;
                 fetch?: string[];
-                transform?: Fn;
+                transform?: (doc: T) => O;
             }): boolean;
-            deny<Fn extends TransformFn, Doc = DispatchTransform<{ transform: Fn }, T, U>>(options: {
-                insert?: (userId: string, doc: Doc) => boolean;
-                update?: (userId: string, doc: Doc, fieldNames: string[], modifier: any) => boolean;
-                remove?: (userId: string, doc: Doc) => boolean;
+            deny<O = U>(options: {
+                insert?: (userId: string, doc: O) => boolean;
+                update?: (userId: string, doc: O, fieldNames: string[], modifier: any) => boolean;
+                remove?: (userId: string, doc: O) => boolean;
                 fetch?: string[];
-                transform?: Fn;
+                transform?: (doc: T) => O;
             }): boolean;
-            find<O extends Options>(selector?: Selector<T> | ObjectID | string, options?: O): Cursor<T, DispatchTransform<O, T, U>>;
-            findOne<O extends Omit<Options, 'limit'>>(selector?: Selector<T> | ObjectID | string, options?: O): DispatchTransform<O, T, U> | undefined;
+            find<O = U>(
+                selector?: Selector<T> | ObjectID | string,
+                options?: Options & { limit?: number; transform?: (doc: T) => O },
+            ): Cursor<T, O>;
+            findOne<O = U>(
+                selector?: Selector<T> | ObjectID | string,
+                options?: Options & { transform?: (doc: T) => O },
+            ): O | undefined;
             insert(doc: OptionalId<T>, callback?: Function): string;
             rawCollection(): MongoCollection<T>;
             rawDatabase(): MongoDb;
